@@ -4,7 +4,7 @@ from util import map_piece_to_character, cell_to_string
 
 
 DEPTH = 3
-
+first_turn = True
 
 class MinMaxArg:
     """ Helper Class for the MinMax Algorithm.
@@ -94,6 +94,24 @@ def evaluate_all_possible_moves(board, minMaxArg, maximumNumberOfMoves = 10):
     more moves possible (in most situations there are), only return the top (or worst). Hint: Slice the list after sorting. 
     """
     # TODO: Implement the method according to the above description
+    pieces = board.iterate_cells_with_pieces(minMaxArg.playAsWhite)
+    all_possible_moves = []
+
+    for piece in pieces:
+        valid_cells = piece.get_valid_cells()
+        old_pos = piece.cell
+
+        for temp_pos in valid_cells:
+            stored_piece = board.get_cell(temp_pos)
+            board.set_cell(temp_pos, piece)
+            all_possible_moves.append(Move(piece, temp_pos, board.evaluate()))
+            board.set_cell(old_pos, piece)
+
+            if stored_piece:
+                board.set_cell(temp_pos, stored_piece)
+    
+    all_possible_moves.sort(key=lambda move: move.score, reverse=minMaxArg.playAsWhite)
+    return all_possible_moves[:maximumNumberOfMoves]
 
 
 def minMax(board, minMaxArg):
@@ -164,6 +182,52 @@ def minMax(board, minMaxArg):
     """
     # TODO: Implement the Mini-Max algorithm
 
+    global first_turn
+    if first_turn:
+        first_turn = False
+        return suggest_random_move(board)
+    
+    moves = evaluate_all_possible_moves(board, minMaxArg)
+
+    if not moves:
+        return Move(None, None, score=-100_000 if minMaxArg.playAsWhite else 100_000)
+
+    
+    if minMaxArg.depth > 1:
+
+        for move in moves:
+            cur_pos = move.piece.cell
+            piece = board.get_cell(move.cell)
+            board.set_cell(move.cell, move.piece)
+
+            move.score = minMax_cached(board, minMaxArg.next()).score
+
+            board.set_cell(cur_pos, move.piece)
+
+            if piece:
+                board.set_cell(move.cell, piece)
+    
+    else:
+
+        if minMaxArg.playAsWhite == True:
+            # sort descending
+            moves.sort(key=lambda move: move.score, reverse = True)
+
+        else:
+            # sort ascending
+            moves.sort(key=lambda move: move.score, reverse = False)
+
+    return moves[0] #return best value
+    
+
+    # #8. stay silly and pick two of the best and one of the worst choices for exciting gameplay
+    
+    # moves_pool = []
+    # moves_pool.append(moves[0:1])
+    # moves_pool.append(moves[-1])
+
+    # return moves_pool[random.randrange(0, len(moves_pool))]
+
 
 def suggest_random_move(board):
     """
@@ -179,6 +243,27 @@ def suggest_random_move(board):
     If there are no legal moves at all, return None.
     """
     # TODO: Implement a valid random move
+
+    # get all white pieces
+    piece_pos = board.iterate_cells_with_pieces(True) # returns array of position of white pieces
+    pieces_and_movement = []
+
+    for piece in piece_pos:
+        # get reachable cells for pieces; append pieces with legal moves to pieces_and_movement
+        potential_moves = piece.get_valid_cells()
+
+        if len(potential_moves) > 0:
+            pieces_and_movement.append( 
+                { "piece_name": piece, "moves": potential_moves})
+
+    # if no piece can legally move:
+    if len(pieces_and_movement) == 0:
+        return None
+
+    # pick random dictionary
+    random_dict = random.choice(pieces_and_movement) 
+    
+    return Move(random_dict["piece_name"], random.choice(random_dict["moves"]), 0)
 
 
 

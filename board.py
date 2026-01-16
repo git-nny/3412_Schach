@@ -229,6 +229,20 @@ class Board(BoardBase):
         super().__init__()
 
     def iterate_cells_with_pieces(self, white):
+
+        for row in range(len(self.cells)):
+            for column in range(len(self.cells[row])): 
+
+                piece = self.get_cell((row, column))
+                
+                if piece:
+                    if white:
+                        if piece.is_white():
+                            yield piece
+
+                    elif piece.is_white() == False:
+                        yield piece
+        
         """
         **TODO**: Write a generator (using the yield keyword) that allows to iterate
         over all cells with a piece of given color.
@@ -240,7 +254,7 @@ class Board(BoardBase):
         :param white: True if WHITE pieces are to be iterated, False otherwise
         :type white: Boolean
         """
-        # TODO: Implement
+        # TODO: Implement - Ricarda
 
     def find_king(self, white):
         """
@@ -255,6 +269,12 @@ class Board(BoardBase):
         :return: The :py:class:'King': object of the given color or None if there is no King on the board.
         """
         # TODO: Implement
+        # Alestair
+
+        for piece in self.iterate_cells_with_pieces(white):     # itterieren über alle Figuren
+            if isinstance(piece,King):                          # wenn Figur = König return König, ansonsten None
+                return piece
+        return None
 
     def is_king_check(self, white):
         """
@@ -267,6 +287,16 @@ class Board(BoardBase):
         Iterate over each reachable cell and check if the kings cell is reachable. If yes, shortcut and return True right away.
         """
         # TODO: Implement
+        # Alestair
+        king = self.find_king(white)                # Liste mit allen recheable cells, aller gegnereischen Figuren
+        
+        if king:
+            enemies = [piece for piece in self.iterate_cells_with_pieces(not white)]
+            for enemy in enemies:
+                if tuple(king.cell) in enemy.get_reachable_cells():        # wenn König in reachable cells return True
+                    return True
+            
+        return False
 
     def evaluate(self):
         """
@@ -278,8 +308,16 @@ class Board(BoardBase):
         Use the iterate_cells_with_pieces Method to find all WHITE pieces and call their respective "evaluate" Method. Sum those scores up.
         Then use the iterate_cells_with_pieces Method to find all BLACK pieces, call their respective "evaluate" Method and substract that from the score.
         """
-        # TODO: Implement
-        score = 0.0
+        # TODO: Implement 
+        # Alestair
+
+        score = 0.0                                         # Starting score
+
+        for piece in self.iterate_cells_with_pieces(True):  # score + alle Werte von weiß
+            score += piece.evaluate()
+        for piece in self.iterate_cells_with_pieces(False): # "neuer score" - alle Werte von Schwarz
+            score -= piece.evaluate()
+        
         return score
 
     def is_valid_cell(self, cell):
@@ -292,7 +330,14 @@ class Board(BoardBase):
         being within the allowed range (0 to 7 inclusively).
         Don´t forget to handle the special case of "cell" being None. Return False in that case
         """
-        # TODO: Implement
+        # Michel
+        if cell and isinstance(cell, tuple) and len(cell) == 2:
+            row, column = cell
+
+            if 0 <= row <= 7 and 0 <= column <= 7:
+                return True
+            
+        return False
 
     def cell_is_valid_and_empty(self, cell):
         """
@@ -303,6 +348,17 @@ class Board(BoardBase):
         If so, use "get_cell()" to retrieve the piece placed on it and return True if there is None
         """
         # TODO: Implement
+        # Michel
+        if cell and isinstance(cell, tuple) and len(cell) == 2:
+
+            if self.is_valid_cell(cell):
+
+                if self.get_cell(cell):
+                    return False
+        
+                return True
+        
+        return None
 
     def piece_can_enter_cell(self, piece, cell):
         """
@@ -320,7 +376,15 @@ class Board(BoardBase):
         the given piece "white" attribute.
         """
         # TODO: Implement
- 
+        # Alestair
+
+        if self.is_valid_cell(cell):
+            if not self.get_cell(cell):
+                return True
+            elif piece.is_white() != self.get_cell(cell).is_white():
+                return True
+            else:
+                return False
 
     def piece_can_hit_on_cell(self, piece, cell):
         """
@@ -337,4 +401,18 @@ class Board(BoardBase):
         If, however, there is another piece, it must be of opposing color. Check the other pieces "white" attribute and compare against
         the given piece "white" attribute.
         """
-        # TODO: Implement
+        # TODO: Implement - Ricarda
+        occupying_piece = self.get_cell(cell)
+        if occupying_piece == None:
+            return False
+        
+        if self.is_valid_cell(cell) == False:
+            return False
+        
+        elif occupying_piece.is_white() == piece.is_white():
+            return False
+        
+        else:
+            return True
+        
+        

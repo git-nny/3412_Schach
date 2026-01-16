@@ -61,6 +61,43 @@ class Piece:
         :return: Return numerical score between -infinity and +infinity. Greater values indicate better evaluation result (more favorable).
         """
         # TODO: Implement
+        # Michel
+        # Modes: 'Beast' | None
+        mode = None
+
+        def add_points(piece: Piece) -> int:
+            """Add points to the score."""
+            types_and_values = {Pawn: 100,
+                                Rook: 500, 
+                                Knight: 320, 
+                                Bishop: 330, 
+                                Queen: 900, 
+                                King: 100_000}
+
+            for type, value in types_and_values.items():
+                if isinstance(piece, type):
+                    return value
+        
+        def activate_beast_mode() -> None:
+            """AI's move will take longer, but moves will be more 'devastating'."""
+            score = 0
+            enemy_pieces = self.board.iterate_cells_with_pieces(not self.is_white())
+            reachable_enemy_pos = set(tuple(piece.cell) for piece in enemy_pieces) & set(tuple(cell) for cell in self.get_valid_cells())
+
+            # Add points on top of this piece's base score depending on what type of enemies they can hit.
+            for enemy_cell in reachable_enemy_pos:
+                reachable_enemy = self.board.get_cell(enemy_cell)
+                score += add_points(reachable_enemy)
+            
+            return score
+            
+        # Grant this piece a score depending on its type. High score = more valuable piece.
+        score = add_points(self)
+
+        if mode == "Beast":
+            score += activate_beast_mode()
+
+        return score
 
     def get_valid_cells(self):
         """
@@ -85,6 +122,25 @@ class Piece:
         :return: Return True 
         """
         # TODO: Implement
+        # Michel
+
+        valid_cells = []
+        reachable_cells = self.get_reachable_cells()
+        old_pos = self.cell
+
+        for target_cell in reachable_cells:
+            piece = self.board.get_cell(target_cell)
+            self.board.set_cell(target_cell, self)
+
+            if not self.board.is_king_check_cached(self.is_white()):
+                valid_cells.append(target_cell)
+
+            self.board.set_cell(old_pos, self)
+
+            if piece:
+                self.board.set_cell(target_cell, piece)
+        
+        return valid_cells
 
 class Pawn(Piece):  # Bauer
     def __init__(self, board, white):
@@ -111,7 +167,29 @@ class Pawn(Piece):  # Bauer
         :return: A list of reachable cells this pawn could move into.
         """
         # TODO: Implement a method that returns all cells this piece can enter in its next move
+        # Michel
+        reachable_cells = []
+        dir_y, home_row = (1, 1) if self.is_white() else (-1, 6)
 
+        curr_y, curr_x = self.cell
+        move_range = 2 if curr_y == home_row else 1
+        
+        for val in range(1, move_range + 1):
+            move_pos = (dir_y * val + curr_y, curr_x)
+
+            if self.board.cell_is_valid_and_empty(move_pos):
+                reachable_cells.append(move_pos)
+            
+            else:
+                break
+
+        for val in (1, -1):
+            hit_pos = (curr_y + dir_y, curr_x + val)
+
+            if self.can_hit_on_cell(hit_pos):
+                reachable_cells.append(hit_pos)
+
+        return reachable_cells
 
 class Rook(Piece):  # Turm
     def __init__(self, board, white):
@@ -134,7 +212,38 @@ class Rook(Piece):  # Turm
         :return: A list of reachable cells this rook could move into.
         """
         # TODO: Implement a method that returns all cells this piece can enter in its next move
+        # Michel
 
+        reachable_cells = []
+        # Direction pattern for the 'Rook'.
+        dir_patterns = {(1, 0),
+                        (-1, 0),
+                        (0, 1),
+                        (0, -1)}
+        curr_y, curr_x = self.cell
+        
+        # Iterate over every possible direction the 'Rook' can move to (horizontally and vertically).
+        for dir_y, dir_x in dir_patterns:
+            dir_clear = True
+            count = 0
+
+            # Check if a cell is reachable, one cell at a time.
+            # Increase/Decrease the x and y values by 1 or -1 depending on the current direction pattern until the 'Rook' reaches an obstacle.
+            while dir_clear:
+                count += 1
+                new_pos = ((count * dir_y + curr_y), (count * dir_x + curr_x))
+                
+                # Break out of the while-loop and go to the next direction if there is an ally piece in the way.
+                if not self.can_enter_cell(new_pos):
+                    break
+                
+                # Before breaking out of the while-loop append the position if there is an enemy piece in the way.
+                elif self.can_hit_on_cell(new_pos):
+                    dir_clear = False
+                
+                reachable_cells.append(new_pos)
+        
+        return reachable_cells
 
 class Knight(Piece):  # Springer
     def __init__(self, board, white):
@@ -157,7 +266,19 @@ class Knight(Piece):  # Springer
         :return: A list of reachable cells this knight could move into.
         """
         # TODO: Implement a method that returns all cells this piece can enter in its next move
+        # Alesatir
 
+        reachable_cells = []
+        y, x= self.cell
+        pos_cells = [(y-2,x-1),(y-1,x-2),(y+1,x-2),(y+2,x-1),(y+2,x+1),(y+1,x+2),(y-1,x+2),(y-2,x+1)]
+        
+        for cell in pos_cells:   # Alle theoretisch möglichen Felder überprüfen
+            if self.board.cell_is_valid_and_empty(cell):
+                reachable_cells.append(cell)
+            elif self.can_enter_cell(cell):
+                if self.can_hit_on_cell(cell):
+                    reachable_cells.append(cell)
+        return reachable_cells
 
 class Bishop(Piece):  # Läufer
     def __init__(self, board, white):
@@ -178,7 +299,32 @@ class Bishop(Piece):  # Läufer
 
         :return: A list of reachable cells this bishop could move into.
         """
-        # TODO: Implement a method that returns all cells this piece can enter in its next move
+        # TODO: Implement a method that returns all cells this piece can enter in its next move  - ricarda
+        directions = [ (-1, -1), (-1, 1), (1, -1), (1, 1)]
+        positions = []
+
+        def get_available_cells_in_direction(position_tuple, count=1):#tuple of start cell, tuple of direction
+
+            # count =  factor for each iteration
+            
+            cell_y, cell_x =  position_tuple # starting position
+            new_pos = (cell_y + direction[0] * count, cell_x + direction[1] * count)
+            # new_pos = (cell_y + direction[0] * count, cell_x + direction[1] * count)
+
+            if not self.board.cell_is_valid_and_empty(new_pos): # checks validity + empty/opposing piece
+                if self.can_hit_on_cell(new_pos): # checks for validity and color!
+                    positions.append(new_pos)
+                    
+            else:
+                positions.append(new_pos)
+                count += 1 
+                get_available_cells_in_direction( position_tuple, count )
+
+
+        for direction in directions:
+            get_available_cells_in_direction(self.cell)
+
+        return positions
 
 
 class Queen(Piece):  # Königin
@@ -202,7 +348,120 @@ class Queen(Piece):  # Königin
         :return: A list of reachable cells this queen could move into.
         """
         # TODO: Implement a method that returns all cells this piece can enter in its next move
+        # Alestair
 
+        reachable_cells = []
+        #y, x= self.cell
+        
+        for i in range(1, 9):   # Alle Felder nach vorne überpfüfen
+            y, x= self.cell
+            y -= i
+            new_pos = (y, x)
+            if self.board.cell_is_valid_and_empty(new_pos):
+                reachable_cells.append(new_pos)
+            elif self.can_enter_cell(new_pos):
+                if self.can_hit_on_cell(new_pos):
+                    reachable_cells.append(new_pos)
+                    break
+            else:
+                break
+        
+        for i in range(1, 9):   # Alle Felder nach hinten überpfüfen
+            y, x= self.cell
+            y += i
+            new_pos = (y, x)
+            if self.board.cell_is_valid_and_empty(new_pos):
+                reachable_cells.append(new_pos)
+            elif self.can_enter_cell(new_pos):
+                if self.can_hit_on_cell(new_pos):
+                    reachable_cells.append(new_pos)
+                    break
+            else:
+                break
+        
+        for i in range(1, 9):   # Alle Felder nach links überpfüfen
+            y, x= self.cell
+            x -= i
+            new_pos = (y, x)
+            if self.board.cell_is_valid_and_empty(new_pos):
+                reachable_cells.append(new_pos)
+            elif self.can_enter_cell(new_pos):
+                if self.can_hit_on_cell(new_pos):
+                    reachable_cells.append(new_pos)
+                    break
+            else:
+                break
+        
+        for i in range(1, 9):   # Alle Felder nach rechts überpfüfen
+            y, x= self.cell
+            x += i
+            new_pos = (y, x)
+            if self.board.cell_is_valid_and_empty(new_pos):
+                reachable_cells.append(new_pos)
+            elif self.can_enter_cell(new_pos):
+                if self.can_hit_on_cell(new_pos):
+                    reachable_cells.append(new_pos)
+                    break
+            else:
+                break
+        
+        for i in range(1, 9):   # Alle Felder nach vorne-links überpfüfen
+            y, x= self.cell
+            y -= i
+            x -= i
+            new_pos = (y, x)
+            if self.board.cell_is_valid_and_empty(new_pos):
+                reachable_cells.append(new_pos)
+            elif self.can_enter_cell(new_pos):
+                if self.can_hit_on_cell(new_pos):
+                    reachable_cells.append(new_pos)
+                    break
+            else:
+                break
+        
+        for i in range(1, 9):   # Alle Felder nach vorne-rechts überpfüfen
+            y, x= self.cell
+            y -= i 
+            x += i
+            new_pos = (y, x)
+            if self.board.cell_is_valid_and_empty(new_pos):
+                reachable_cells.append(new_pos)
+            elif self.can_enter_cell(new_pos):
+                if self.can_hit_on_cell(new_pos):
+                    reachable_cells.append(new_pos)
+                    break
+            else:
+                break
+        
+        for i in range(1, 9):   # Alle Felder nach hinten-links überpfüfen
+            y, x= self.cell
+            y += i
+            x -= i
+            new_pos = (y, x)
+            if self.board.cell_is_valid_and_empty(new_pos):
+                reachable_cells.append(new_pos)
+            elif self.can_enter_cell(new_pos):
+                if self.can_hit_on_cell(new_pos):
+                    reachable_cells.append(new_pos)
+                    break
+            else:
+                break
+        
+        for i in range(1, 9):   # Alle Felder nach hinten-rechts überpfüfen
+            y, x= self.cell
+            y += i
+            x += i
+            new_pos = (y, x)
+            if self.board.cell_is_valid_and_empty(new_pos):
+                reachable_cells.append(new_pos)
+            elif self.can_enter_cell(new_pos):
+                if self.can_hit_on_cell(new_pos):
+                    reachable_cells.append(new_pos)
+                    break
+            else:
+                break
+        
+        return reachable_cells
 
 class King(Piece):  # König
     def __init__(self, board, white):
@@ -223,4 +482,49 @@ class King(Piece):  # König
 
         :return: A list of reachable cells this king could move into.
         """
-        # TODO: Implement a method that returns all cells this piece can enter in its next move
+        # TODO: Implement a method that returns all cells this piece can enter in its next move - Ricarda
+        y, x = self.cell # get current position (tuple)
+
+        pos_modifier = [ -1, 0, 1 ]
+        positions_x = [ ( y, x + modifier) for modifier in pos_modifier ] # row positions
+        new_position = []
+
+        for position_y, position_x in positions_x:
+            for modifier in pos_modifier: # iterate through rows ...
+                new_position.append( (position_y + modifier, position_x )) # ... and add columns with the modifiers
+
+        # Filter lists for valid_and_empty; can_hit_on and can_enter_cell
+        empty_cells = [position for position in new_position if self.board.cell_is_valid_and_empty(position)] 
+        attack_cells = [position for position in new_position if self.can_hit_on_cell(position)]
+        enter_cells = [position for position in new_position if self.can_enter_cell(position)] 
+
+        # join filtered list duplicates
+        available_positions = set(empty_cells + attack_cells + enter_cells) 
+        available_positions = list(available_positions)
+
+        return available_positions
+    
+# ⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣧⣤⡴⠞⠛⠛⠛⠛⠛⠛⠛⠛⠳⢦⣤⣴⣿⣿⣿⣦⡄⠀⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⡿⢋⡽⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢯⡙⢻⣿⣿⡄⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣷⡟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣾⣿⣿⠃⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠀⠘⢿⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⠃⠀⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠀⢠⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⡆⠀⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠀⣼⠃⠀⠀⠀⠀⠀⠀⣠⣤⣄⠀⠀⠀⢀⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⢀⣴⣾⣿⣿⣿⠀⠀⠀⢾⣾⣿⣿⣦⣄⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠀⠸⣧⠀⠀⠀⠘⠿⣿⣿⣿⠋⠰⣶⡶⠈⢻⣿⣿⡿⠟⠀⠀⠀⠀⣸⠇⠀⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠀⠀⣘⣷⢤⣀⣀⠠⣤⠠⠘⠢⠠⡜⣄⣠⣚⠽⠄⠤⠼⠁⣀⡴⠞⠛⢦⡀⠀⠀⠀⠀⠀⠀
+# ⠀⠀⢀⡴⠊⣉⡉⠵⣟⠛⡏⢁⣀⡠⣤⠕⠶⠂⡉⢉⣁⣀⣀⣠⠤⠴⠖⠚⠉⠉⠀⠀⠀⠀⠙⣦⡀⠀⠀⠀⠀
+# ⠀⡠⠞⠊⢹⣀⣀⠀⡼⠒⠉⠁⡇⢆⠆⠀⠀⢀⣠⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⠀⠀⠀⠀⠈⢷⡄⠀⠀⠀
+# ⠈⠦⢴⡶⣈⣁⠠⠞⠁⠀⠀⠠⠗⠁⠀⠀⠸⠊⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠀⠀⠀⠀⠀⠀⢿⡄⠀⠀
+# ⠀⠀⠘⣧⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠈⣷⠀⠀
+# ⠀⠀⠀⠈⠻⠶⢤⣤⠤⢤⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡼⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀
+# ⠀⠀⠀⠀⠀⠀⢰⡏⠀⢸⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡼⠁⠀⠀⠀⠀⠀⠀⢀⣿⡄⠀
+# ⠀⠀⠀⠀⠀⢀⡿⠀⠀⠸⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡾⠁⠀⠀⠀⠀⠀⠀⢀⡼⠃⢿⡀
+# ⠀⠀⠀⣀⡤⠼⢇⡀⠀⠀⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢧⡀⠀⠀⠀⣀⣤⠴⠋⠀⠀⠈⣷
+# ⠀⠀⡼⡥⢔⢑⢎⢩⢢⡀⠘⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣩⡛⢛⠛⠢⡀⠀⠀⠀⠀⠀⣿
+# ⠀⠀⡇⡪⢱⠉⢐⠀⠀⢡⠀⠐⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠎⠀⢘⢃⢠⠒⡴⡀⠀⠀⠀⠀⣿
+# ⠀⠀⣧⠐⠂⠀⠀⠀⢠⠘⡄⠀⠘⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡜⠀⠀⠃⠀⠐⠒⠀⡇⠀⠀⠀⣼⠃
+# ⠀⠀⠘⡄⢀⠀⠀⠀⠸⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠈⠀⠀⠀⠈⠈⢰⠁⠀⢀⣴⠏⠀
+# ⠀⠀⠀⠙⢦⡁⠂⠐⠁⡸⠀⠀⠀⠀⣀⣀⣀⣀⣀⣠⣀⣀⣀⣀⠀⠀⠀⡇⠠⡀⠀⢀⠄⢠⢃⣠⡶⠋⠁⠀⠀
+# ⠀⠀⠀⠀⠀⠉⠓⠒⠊⠉⠛⠛⠛⠋⠉⠉⠉⠉⠁⠀⠀⠈⠉⠉⠙⠛⠳⢾⣦⡀⣁⣠⡴⠟⠋⠁⠀⠀⠀⠀⠀
+
