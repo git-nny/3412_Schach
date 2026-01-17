@@ -334,9 +334,10 @@ class Board(BoardBase):
         if cell and isinstance(cell, tuple) and len(cell) == 2:
             row, column = cell
 
+            # Check if row and column are both within the range of 0 to 7 (inclusively)
             if 0 <= row <= 7 and 0 <= column <= 7:
                 return True
-            
+
         return False
 
     def cell_is_valid_and_empty(self, cell):
@@ -349,16 +350,14 @@ class Board(BoardBase):
         """
         # TODO: Implement
         # Michel
+        # Check if argument has the correct format
         if cell and isinstance(cell, tuple) and len(cell) == 2:
 
-            if self.is_valid_cell(cell):
-
-                if self.get_cell(cell):
-                    return False
-        
+            # Check if cell is valid and empty
+            if self.is_valid_cell(cell) and not self.get_cell(cell):
                 return True
-        
-        return None
+
+        return False
 
     def piece_can_enter_cell(self, piece, cell):
         """
