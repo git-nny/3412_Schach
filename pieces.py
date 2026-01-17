@@ -270,12 +270,12 @@ class Knight(Piece):  # Springer
 
         reachable_cells = []
         y, x= self.cell
-        pos_cells = [(y-2,x-1),(y-1,x-2),(y+1,x-2),(y+2,x-1),(y+2,x+1),(y+1,x+2),(y-1,x+2),(y-2,x+1)]
+        pos_cells = [(y-2,x-1),(y-1,x-2),(y+1,x-2),(y+2,x-1),(y+2,x+1),(y+1,x+2),(y-1,x+2),(y-2,x+1)]   # Alle theorerisch möglichen Zellen
         
-        for cell in pos_cells:   # Alle theoretisch möglichen Felder überprüfen
-            if self.board.cell_is_valid_and_empty(cell):
+        for cell in pos_cells:                                      # Über alle theoretisch möglichen Zellen itterieren
+            if self.board.cell_is_valid_and_empty(cell):            # Wenn Zelle leer, appenden
                 reachable_cells.append(cell)
-            elif self.can_enter_cell(cell):
+            elif self.can_enter_cell(cell):                         # Wenn nicht leer, geg. Figur?
                 if self.can_hit_on_cell(cell):
                     reachable_cells.append(cell)
         return reachable_cells
@@ -351,117 +351,24 @@ class Queen(Piece):  # Königin
         # Alestair
 
         reachable_cells = []
-        #y, x= self.cell
-        
-        for i in range(1, 9):   # Alle Felder nach vorne überpfüfen
-            y, x= self.cell
-            y -= i
-            new_pos = (y, x)
-            if self.board.cell_is_valid_and_empty(new_pos):
-                reachable_cells.append(new_pos)
-            elif self.can_enter_cell(new_pos):
-                if self.can_hit_on_cell(new_pos):
+        direction = [(-1,0), (1,0), (0,-1), (0,1), (-1,-1), (-1,1), (1,-1), (1,1)] # y:1 x:2     # Alle möglichen Richtungen
+
+        for move in direction:
+            for i in range(1, 9):                                                   # Loop für jeden Step
+                start_y, start_x = self.cell                                        # Anfangsposition entpacken
+                move_y, move_x =move                                                # Richtung entpacken
+                new_pos = ((start_y + move_y * i), (start_x + move_x * i))          # Richtung * Step + Anfangsposition
+
+                if self.board.cell_is_valid_and_empty(new_pos):                     # Wenn neue Pos. leer, append
                     reachable_cells.append(new_pos)
+                elif self.can_enter_cell(new_pos):                                  # Wenn neue Pos. nicht leer, geg. Figur?                
+                    if self.can_hit_on_cell(new_pos):
+                        reachable_cells.append(new_pos)                             # Wenn geg. Figur, Zelle möglich aber danach stopp
+                        break
+                else:                                                               # Wenn keine validen Zelle mehr, beenden
                     break
-            else:
-                break
-        
-        for i in range(1, 9):   # Alle Felder nach hinten überpfüfen
-            y, x= self.cell
-            y += i
-            new_pos = (y, x)
-            if self.board.cell_is_valid_and_empty(new_pos):
-                reachable_cells.append(new_pos)
-            elif self.can_enter_cell(new_pos):
-                if self.can_hit_on_cell(new_pos):
-                    reachable_cells.append(new_pos)
-                    break
-            else:
-                break
-        
-        for i in range(1, 9):   # Alle Felder nach links überpfüfen
-            y, x= self.cell
-            x -= i
-            new_pos = (y, x)
-            if self.board.cell_is_valid_and_empty(new_pos):
-                reachable_cells.append(new_pos)
-            elif self.can_enter_cell(new_pos):
-                if self.can_hit_on_cell(new_pos):
-                    reachable_cells.append(new_pos)
-                    break
-            else:
-                break
-        
-        for i in range(1, 9):   # Alle Felder nach rechts überpfüfen
-            y, x= self.cell
-            x += i
-            new_pos = (y, x)
-            if self.board.cell_is_valid_and_empty(new_pos):
-                reachable_cells.append(new_pos)
-            elif self.can_enter_cell(new_pos):
-                if self.can_hit_on_cell(new_pos):
-                    reachable_cells.append(new_pos)
-                    break
-            else:
-                break
-        
-        for i in range(1, 9):   # Alle Felder nach vorne-links überpfüfen
-            y, x= self.cell
-            y -= i
-            x -= i
-            new_pos = (y, x)
-            if self.board.cell_is_valid_and_empty(new_pos):
-                reachable_cells.append(new_pos)
-            elif self.can_enter_cell(new_pos):
-                if self.can_hit_on_cell(new_pos):
-                    reachable_cells.append(new_pos)
-                    break
-            else:
-                break
-        
-        for i in range(1, 9):   # Alle Felder nach vorne-rechts überpfüfen
-            y, x= self.cell
-            y -= i 
-            x += i
-            new_pos = (y, x)
-            if self.board.cell_is_valid_and_empty(new_pos):
-                reachable_cells.append(new_pos)
-            elif self.can_enter_cell(new_pos):
-                if self.can_hit_on_cell(new_pos):
-                    reachable_cells.append(new_pos)
-                    break
-            else:
-                break
-        
-        for i in range(1, 9):   # Alle Felder nach hinten-links überpfüfen
-            y, x= self.cell
-            y += i
-            x -= i
-            new_pos = (y, x)
-            if self.board.cell_is_valid_and_empty(new_pos):
-                reachable_cells.append(new_pos)
-            elif self.can_enter_cell(new_pos):
-                if self.can_hit_on_cell(new_pos):
-                    reachable_cells.append(new_pos)
-                    break
-            else:
-                break
-        
-        for i in range(1, 9):   # Alle Felder nach hinten-rechts überpfüfen
-            y, x= self.cell
-            y += i
-            x += i
-            new_pos = (y, x)
-            if self.board.cell_is_valid_and_empty(new_pos):
-                reachable_cells.append(new_pos)
-            elif self.can_enter_cell(new_pos):
-                if self.can_hit_on_cell(new_pos):
-                    reachable_cells.append(new_pos)
-                    break
-            else:
-                break
-        
         return reachable_cells
+        
 
 class King(Piece):  # König
     def __init__(self, board, white):

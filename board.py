@@ -288,13 +288,12 @@ class Board(BoardBase):
         """
         # TODO: Implement
         # Alestair
-        king = self.find_king(white)                # Liste mit allen recheable cells, aller gegnereischen Figuren
-        
+        king = self.find_king(white)                
         if king:
-            enemies = [piece for piece in self.iterate_cells_with_pieces(not white)]
-            for enemy in enemies:
-                if tuple(king.cell) in enemy.get_reachable_cells():        # wenn König in reachable cells return True
-                    return True
+            enemies = [piece for piece in self.iterate_cells_with_pieces(not white)]    # Liste mit allen geg. Figuren
+            for enemy in enemies:                                                       # Durch Liste mit allen Gegnern itterieren
+                if tuple(king.cell) in enemy.get_reachable_cells():                     # Wenn König in reachable_cells der geg. Figur
+                    return True                                                         # return True, sonst False
             
         return False
 
@@ -378,10 +377,10 @@ class Board(BoardBase):
         # TODO: Implement
         # Alestair
 
-        if self.is_valid_cell(cell):
-            if not self.get_cell(cell):
+        if self.is_valid_cell(cell):                                    # Check ob Zelle valide ist
+            if not self.get_cell(cell):                                 # Check ob Zelle leer ist
                 return True
-            elif piece.is_white() != self.get_cell(cell).is_white():
+            elif piece.is_white() != self.get_cell(cell).is_white():    # Wenn nicht leer, geg. Figur?
                 return True
             else:
                 return False
