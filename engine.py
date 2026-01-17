@@ -4,7 +4,7 @@ from util import map_piece_to_character, cell_to_string
 
 
 DEPTH = 3
-first_turn = True
+RANDOM_MOVE_CHANCE = 10
 
 class MinMaxArg:
     """ Helper Class for the MinMax Algorithm.
@@ -109,8 +109,12 @@ def evaluate_all_possible_moves(board, minMaxArg, maximumNumberOfMoves = 10):
 
             if stored_piece:
                 board.set_cell(temp_pos, stored_piece)
-    
+
+    for move in all_possible_moves:
+        move.score += random.uniform(0.0, 0.5)
+
     all_possible_moves.sort(key=lambda move: move.score, reverse=minMaxArg.playAsWhite)
+
     return all_possible_moves[:maximumNumberOfMoves]
 
 
@@ -181,52 +185,37 @@ def minMax(board, minMaxArg):
     :rtype: :py:class:`Move`
     """
     # TODO: Implement the Mini-Max algorithm
+    possible_moves = evaluate_all_possible_moves(board, minMaxArg)
 
-    global first_turn
-    if first_turn:
-        first_turn = False
-        return suggest_random_move(board)
-    
-    moves = evaluate_all_possible_moves(board, minMaxArg)
+    if possible_moves:
+        if minMaxArg.depth > 1:
 
-    if not moves:
-        return Move(None, None, score=-100_000 if minMaxArg.playAsWhite else 100_000)
+            for move in possible_moves:
+                cur_pos = move.piece.cell
+                piece_on_move_pos = board.get_cell(move.cell)
+                board.set_cell(move.cell, move.piece)
 
-    
-    if minMaxArg.depth > 1:
+                move.score = minMax_cached(board, minMaxArg.next()).score
 
-        for move in moves:
-            cur_pos = move.piece.cell
-            piece = board.get_cell(move.cell)
-            board.set_cell(move.cell, move.piece)
+                board.set_cell(cur_pos, move.piece)
 
-            move.score = minMax_cached(board, minMaxArg.next()).score
+                if piece_on_move_pos:
+                    board.set_cell(move.cell, piece_on_move_pos)
 
-            board.set_cell(cur_pos, move.piece)
+            if minMaxArg.depth == DEPTH:
+                if random.randint(1, 100) <= RANDOM_MOVE_CHANCE:
+                    top_three_moves = possible_moves[:3]
+                    random.shuffle(top_three_moves)
+                    print("-" * 30, "Move was randomized.", "-" * 30, sep="\n")
 
-            if piece:
-                board.set_cell(move.cell, piece)
-    
-    else:
+                    return top_three_moves[0]  # return a random Move out of the top three
 
-        if minMaxArg.playAsWhite == True:
-            # sort descending
-            moves.sort(key=lambda move: move.score, reverse = True)
+            # sort ascending/descending depending on minMaxArg.play
+            possible_moves.sort(key=lambda move: move.score, reverse=minMaxArg.playAsWhite)
 
-        else:
-            # sort ascending
-            moves.sort(key=lambda move: move.score, reverse = False)
+        return possible_moves[0]  # return best value
 
-    return moves[0] #return best value
-    
-
-    # #8. stay silly and pick two of the best and one of the worst choices for exciting gameplay
-    
-    # moves_pool = []
-    # moves_pool.append(moves[0:1])
-    # moves_pool.append(moves[-1])
-
-    # return moves_pool[random.randrange(0, len(moves_pool))]
+    return Move(None, None, score=-1_000_000 if minMaxArg.playAsWhite else 1_000_000)  # return a "None"-Move
 
 
 def suggest_random_move(board):
@@ -243,9 +232,8 @@ def suggest_random_move(board):
     If there are no legal moves at all, return None.
     """
     # TODO: Implement a valid random move
-
     # get all white pieces
-    piece_pos = board.iterate_cells_with_pieces(True) # returns array of position of white pieces
+    piece_pos = board.iterate_cells_with_pieces(True)  # returns array of position of white pieces
     pieces_and_movement = []
 
     for piece in piece_pos:
@@ -253,16 +241,16 @@ def suggest_random_move(board):
         potential_moves = piece.get_valid_cells()
 
         if len(potential_moves) > 0:
-            pieces_and_movement.append( 
-                { "piece_name": piece, "moves": potential_moves})
+            pieces_and_movement.append(
+                {"piece_name": piece, "moves": potential_moves})
 
     # if no piece can legally move:
     if len(pieces_and_movement) == 0:
         return None
 
     # pick random dictionary
-    random_dict = random.choice(pieces_and_movement) 
-    
+    random_dict = random.choice(pieces_and_movement)
+
     return Move(random_dict["piece_name"], random.choice(random_dict["moves"]), 0)
 
 

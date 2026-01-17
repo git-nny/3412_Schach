@@ -65,33 +65,81 @@ class Piece:
         # Modes: 'Beast' | None
         mode = None
 
-        def add_points(piece: Piece) -> int:
-            """Add points to the score."""
-            types_and_values = {Pawn: 100,
-                                Rook: 500, 
-                                Knight: 320, 
-                                Bishop: 330, 
-                                Queen: 900, 
-                                King: 100_000}
+        # def is_diagonal(enemy_pos):
+        #     curr_y, curr_x = self.cell
+        #     enemy_y, enemy_x = enemy_pos
+        #     delta_y = enemy_y - curr_y
+        #     delta_x = enemy_x - curr_x
+        #     return delta_x != 0 and abs(delta_x) == abs(delta_y)
+        #
+        # def is_horizontal(enemy_pos):
+        #     curr_y, curr_x = self.cell
+        #     enemy_y, enemy_x = enemy_pos
+        #     return curr_y == enemy_y and curr_x != enemy_x
+        #
+        # def is_vertical(enemy_pos):
+        #     curr_y, curr_x = self.cell
+        #     enemy_y, enemy_x = enemy_pos
+        #     return curr_y != enemy_y and curr_x == enemy_x
 
+        def add_points(piece: Piece) -> int | None:
+            """Add points to the score."""
             for type, value in types_and_values.items():
                 if isinstance(piece, type):
                     return value
-        
-        def activate_beast_mode() -> None:
+
+        # def activate_beast_mode() -> int:
+        #     """AI's move will take longer, but moves will be more 'devastating'."""
+        #     score = 0
+        #     reachable_enemy_positions = (cell for cell in self.get_valid_cells() if self.board.get_cell(cell))
+        #
+        #     # Add points on top of this piece's base score depending on what type of enemies they can hit.
+        #     for enemy_cell in reachable_enemy_positions:
+        #         reachable_enemy = self.board.get_cell(enemy_cell)
+        #
+        #         if isinstance(self, Pawn):
+        #             if isinstance(reachable_enemy, Knight) or isinstance(reachable_enemy, Rook):
+        #                 score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
+        #
+        #         elif isinstance(self, Rook):
+        #             if isinstance(reachable_enemy, Bishop) or isinstance(reachable_enemy, Knight) or isinstance(reachable_enemy, Pawn):
+        #                 score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
+        #
+        #         elif isinstance(self, Knight):
+        #             score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
+        #
+        #         elif isinstance(self, Bishop):
+        #             if isinstance(reachable_enemy, Rook) or isinstance(reachable_enemy, Knight) or isinstance(reachable_enemy, Pawn):
+        #                 score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
+        #
+        #         elif isinstance(self, Queen):
+        #             if isinstance(reachable_enemy, Bishop) or isinstance(reachable_enemy, Knight) or isinstance(reachable_enemy, Pawn):
+        #                 score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
+        #
+        #     return score
+
+        def activate_beast_mode() -> int:
             """AI's move will take longer, but moves will be more 'devastating'."""
             score = 0
             enemy_pieces = self.board.iterate_cells_with_pieces(not self.is_white())
-            reachable_enemy_pos = set(tuple(piece.cell) for piece in enemy_pieces) & set(tuple(cell) for cell in self.get_valid_cells())
+            reachable_enemy_pos = set(tuple(piece.cell) for piece in enemy_pieces) & set(
+                tuple(cell) for cell in self.get_valid_cells())
 
             # Add points on top of this piece's base score depending on what type of enemies they can hit.
             for enemy_cell in reachable_enemy_pos:
                 reachable_enemy = self.board.get_cell(enemy_cell)
-                score += add_points(reachable_enemy)
-            
+                score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
+
             return score
-            
+
         # Grant this piece a score depending on its type. High score = more valuable piece.
+        types_and_values = {Pawn: 100,
+                            Rook: 500,
+                            Knight: 300,
+                            Bishop: 400,
+                            Queen: 900,
+                            King: 100_000}
+
         score = add_points(self)
 
         if mode == "Beast":
