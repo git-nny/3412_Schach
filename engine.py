@@ -253,14 +253,15 @@ def suggest_random_move(board):
     If there are no legal moves at all, return None.
     """
     # TODO: Implement a valid random move
-    # get all white pieces
-    piece_pos = board.iterate_cells_with_pieces(True)  # returns array of position of white pieces
-    pieces_and_movement = []
+
+    piece_pos = board.iterate_cells_with_pieces(True) # returns array of position of white pieces
+    pieces_and_movement = [] 
 
     for piece in piece_pos:
         # get reachable cells for pieces; append pieces with legal moves to pieces_and_movement
         potential_moves = piece.get_valid_cells()
-
+        
+        # append dictionaries with piece and a list of potential moves
         if len(potential_moves) > 0:
             pieces_and_movement.append(
                 {"piece_name": piece, "moves": potential_moves})
@@ -271,9 +272,7 @@ def suggest_random_move(board):
 
     # pick random dictionary
     random_dict = random.choice(pieces_and_movement)
-
     return Move(random_dict["piece_name"], random.choice(random_dict["moves"]), 0)
-
 
 
 def suggest_move(board):
