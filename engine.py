@@ -4,7 +4,7 @@ from util import map_piece_to_character, cell_to_string
 
 
 DEPTH = 3
-RANDOM_MOVE_CHANCE = 10
+RANDOM_MOVE_CHANCE = 10  # Adjust Random Move Chance (0-100)
 
 class MinMaxArg:
     """ Helper Class for the MinMax Algorithm.
@@ -59,7 +59,7 @@ class Move:
         return s
 
 
-def evaluate_all_possible_moves(board, minMaxArg, maximumNumberOfMoves = 10):
+def evaluate_all_possible_moves(board, minMaxArg: MinMaxArg, maximumNumberOfMoves: int = 10) -> list[Move] | None:
     """
     **TODO**:
     This method must evaluate all possible moves from all pieces of the current color. 
@@ -94,31 +94,41 @@ def evaluate_all_possible_moves(board, minMaxArg, maximumNumberOfMoves = 10):
     more moves possible (in most situations there are), only return the top (or worst). Hint: Slice the list after sorting. 
     """
     # TODO: Implement the method according to the above description
-    pieces = board.iterate_cells_with_pieces(minMaxArg.playAsWhite)
+    # Michel
+    # Create empty list and save all pieces of specified colour (minMaxArg.playAsWhite)
     all_possible_moves = []
+    pieces = board.iterate_cells_with_pieces(minMaxArg.playAsWhite)
 
+    # Iterate over every piece, get all its valid cells and save that piece's old position
     for piece in pieces:
         valid_cells = piece.get_valid_cells()
         old_pos = piece.cell
 
+        # Iterate over every valid position and store the piece on that position (or 'None')
         for temp_pos in valid_cells:
             stored_piece = board.get_cell(temp_pos)
+
+            # Change the board configuration to the new position and evaluate the board
             board.set_cell(temp_pos, piece)
             all_possible_moves.append(Move(piece, temp_pos, board.evaluate()))
+
+            # Return the board to its original state
             board.set_cell(old_pos, piece)
 
             if stored_piece:
                 board.set_cell(temp_pos, stored_piece)
 
+    # Add slight variation to the scores to accommodate for the case of multiple moves having the same score
     for move in all_possible_moves:
         move.score += random.uniform(0.0, 0.5)
 
+    # Sort all moves in ascending/descending order depending on (minMaxArg.playAsWhite)
     all_possible_moves.sort(key=lambda move: move.score, reverse=minMaxArg.playAsWhite)
 
     return all_possible_moves[:maximumNumberOfMoves]
 
 
-def minMax(board, minMaxArg):
+def minMax(board, minMaxArg: MinMaxArg) -> Move:
     """
     **TODO**:
     This method implement the core mini-max search algorithm.
@@ -185,37 +195,48 @@ def minMax(board, minMaxArg):
     :rtype: :py:class:`Move`
     """
     # TODO: Implement the Mini-Max algorithm
+    # Save a list of top 10 Moves
     possible_moves = evaluate_all_possible_moves(board, minMaxArg)
+
 
     if possible_moves:
         if minMaxArg.depth > 1:
 
+            # Iterate over every possible move, store the piece on that moves' cell (or None) and the old position
             for move in possible_moves:
-                cur_pos = move.piece.cell
+                old_pos = move.piece.cell
                 piece_on_move_pos = board.get_cell(move.cell)
+
+                # Change the board configuration to the new position
                 board.set_cell(move.cell, move.piece)
 
+                # Save a new score of a future board configuration to this move
                 move.score = minMax_cached(board, minMaxArg.next()).score
 
-                board.set_cell(cur_pos, move.piece)
+                # Return the board to its original state
+                board.set_cell(old_pos, move.piece)
 
                 if piece_on_move_pos:
                     board.set_cell(move.cell, piece_on_move_pos)
 
+            # Choose a random move out of the top three after recursion has returned to its initial function call
             if minMaxArg.depth == DEPTH:
                 if random.randint(1, 100) <= RANDOM_MOVE_CHANCE:
                     top_three_moves = possible_moves[:3]
                     random.shuffle(top_three_moves)
                     print("-" * 30, "Move was randomized.", "-" * 30, sep="\n")
 
-                    return top_three_moves[0]  # return a random Move out of the top three
+                    # Return a random Move out of the top three
+                    return top_three_moves[0]
 
-            # sort ascending/descending depending on minMaxArg.play
+            # Sort ascending/descending depending on 'minMaxArg.playAsWhite'
             possible_moves.sort(key=lambda move: move.score, reverse=minMaxArg.playAsWhite)
 
-        return possible_moves[0]  # return best value
+        # Return best value
+        return possible_moves[0]
 
-    return Move(None, None, score=-1_000_000 if minMaxArg.playAsWhite else 1_000_000)  # return a "None"-Move
+    # Return a 'None'-Move if no possible moves are left
+    return Move(None, (None, None), score=-1_000_000 if minMaxArg.playAsWhite else 1_000_000)
 
 
 def suggest_random_move(board):

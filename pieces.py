@@ -48,7 +48,7 @@ class Piece:
         """
         return self.board.piece_can_hit_on_cell(self, cell)
 
-    def evaluate(self):
+    def evaluate(self) -> int:
         """
         **TODO** Implement a meaningful numerical evaluation of this piece on the board.
         This evaluation happens independent of the color as later, values for white pieces will be added and values for black pieces will be substracted. 
@@ -62,92 +62,49 @@ class Piece:
         """
         # TODO: Implement
         # Michel
-        # Modes: 'Beast' | None
+        # Turn on/off 'Thread points'
+        # Modes: 'Threat' | None = Standard-Mode
+        # mode = "Threat"
         mode = None
 
-        # def is_diagonal(enemy_pos):
-        #     curr_y, curr_x = self.cell
-        #     enemy_y, enemy_x = enemy_pos
-        #     delta_y = enemy_y - curr_y
-        #     delta_x = enemy_x - curr_x
-        #     return delta_x != 0 and abs(delta_x) == abs(delta_y)
-        #
-        # def is_horizontal(enemy_pos):
-        #     curr_y, curr_x = self.cell
-        #     enemy_y, enemy_x = enemy_pos
-        #     return curr_y == enemy_y and curr_x != enemy_x
-        #
-        # def is_vertical(enemy_pos):
-        #     curr_y, curr_x = self.cell
-        #     enemy_y, enemy_x = enemy_pos
-        #     return curr_y != enemy_y and curr_x == enemy_x
-
-        def add_points(piece: Piece) -> int | None:
+        def add_points(piece: Piece) -> int:
             """Add points to the score."""
-            for type, value in types_and_values.items():
-                if isinstance(piece, type):
-                    return value
+            # Piece value dictionary
+            piece_types_and_values = {Pawn: 100,
+                                      Rook: 500,
+                                      Knight: 300,
+                                      Bishop: 400,
+                                      Queen: 900,
+                                      King: 100_000}
 
-        # def activate_beast_mode() -> int:
-        #     """AI's move will take longer, but moves will be more 'devastating'."""
-        #     score = 0
-        #     reachable_enemy_positions = (cell for cell in self.get_valid_cells() if self.board.get_cell(cell))
-        #
-        #     # Add points on top of this piece's base score depending on what type of enemies they can hit.
-        #     for enemy_cell in reachable_enemy_positions:
-        #         reachable_enemy = self.board.get_cell(enemy_cell)
-        #
-        #         if isinstance(self, Pawn):
-        #             if isinstance(reachable_enemy, Knight) or isinstance(reachable_enemy, Rook):
-        #                 score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
-        #
-        #         elif isinstance(self, Rook):
-        #             if isinstance(reachable_enemy, Bishop) or isinstance(reachable_enemy, Knight) or isinstance(reachable_enemy, Pawn):
-        #                 score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
-        #
-        #         elif isinstance(self, Knight):
-        #             score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
-        #
-        #         elif isinstance(self, Bishop):
-        #             if isinstance(reachable_enemy, Rook) or isinstance(reachable_enemy, Knight) or isinstance(reachable_enemy, Pawn):
-        #                 score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
-        #
-        #         elif isinstance(self, Queen):
-        #             if isinstance(reachable_enemy, Bishop) or isinstance(reachable_enemy, Knight) or isinstance(reachable_enemy, Pawn):
-        #                 score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
-        #
-        #     return score
+            # Return a value depending on Piece type
+            for piece_type, piece_value in piece_types_and_values.items():
+                if isinstance(piece, piece_type):
+                    return piece_value
 
-        def activate_beast_mode() -> int:
-            """AI's move will take longer, but moves will be more 'devastating'."""
-            score = 0
-            enemy_pieces = self.board.iterate_cells_with_pieces(not self.is_white())
-            reachable_enemy_pos = set(tuple(piece.cell) for piece in enemy_pieces) & set(
-                tuple(cell) for cell in self.get_valid_cells())
+            return 0
 
-            # Add points on top of this piece's base score depending on what type of enemies they can hit.
-            for enemy_cell in reachable_enemy_pos:
-                reachable_enemy = self.board.get_cell(enemy_cell)
-                score += add_points(reachable_enemy) * (0.01 if not isinstance(reachable_enemy, King) else 0.001)
+        def add_threat_points() -> int:
+            """Pieces gain even more points for 'threatening' opponent pieces after a move"""
+            val = 0
+            valid_cells = self.get_valid_cells()
+            reachable_enemies = (self.board.get_cell(cell) for cell in valid_cells if self.board.get_cell(cell))
 
-            return score
+            # Add points on top of this piece's base score depending on what type of enemy and how many they can hit.
+            for enemy in reachable_enemies:
+                val += add_points(enemy) * (0.01 if not isinstance(enemy, King) else 0.001)
 
-        # Grant this piece a score depending on its type. High score = more valuable piece.
-        types_and_values = {Pawn: 100,
-                            Rook: 500,
-                            Knight: 300,
-                            Bishop: 400,
-                            Queen: 900,
-                            King: 100_000}
+            return val
 
         score = add_points(self)
 
-        if mode == "Beast":
-            score += activate_beast_mode()
+        # Check if 'Thread points' are active
+        if mode == "Threat":
+            score += add_threat_points()
 
         return score
 
-    def get_valid_cells(self):
+    def get_valid_cells(self) -> list[tuple[int, int]]:
         """
         **TODO** Return a list of **valid** cells this piece can move into. 
         
@@ -171,22 +128,26 @@ class Piece:
         """
         # TODO: Implement
         # Michel
-
+        # Create an empty list and save current position and all reachable cells
         valid_cells = []
         reachable_cells = self.get_reachable_cells()
         old_pos = self.cell
 
-        for target_cell in reachable_cells:
-            piece = self.board.get_cell(target_cell)
-            self.board.set_cell(target_cell, self)
+        # Iterate over every reachable cell and store the piece on it (or None)
+        for temp_pos in reachable_cells:
+            piece = self.board.get_cell(temp_pos)
+
+            # Change the board configuration to the new position and check if own king is 'check'
+            self.board.set_cell(temp_pos, self)
 
             if not self.board.is_king_check_cached(self.is_white()):
-                valid_cells.append(target_cell)
+                valid_cells.append(temp_pos)
 
+            # Return the board to its original state
             self.board.set_cell(old_pos, self)
 
             if piece:
-                self.board.set_cell(target_cell, piece)
+                self.board.set_cell(temp_pos, piece)
         
         return valid_cells
 
@@ -194,7 +155,7 @@ class Pawn(Piece):  # Bauer
     def __init__(self, board, white):
         super().__init__(board, white)
 
-    def get_reachable_cells(self):
+    def get_reachable_cells(self) -> list[tuple[int, int]]:
         """
         **TODO** Implement the movability mechanik for `pawns <https://de.wikipedia.org/wiki/Bauer_(Schach)>`_. 
 
@@ -216,23 +177,27 @@ class Pawn(Piece):  # Bauer
         """
         # TODO: Implement a method that returns all cells this piece can enter in its next move
         # Michel
+        # Create an empty list and set the Pawns direction and home row depending on their colour
         reachable_cells = []
-        dir_y, home_row = (1, 1) if self.is_white() else (-1, 6)
+        dir_y = 1 if self.is_white() else -1
+        home_row = 1 if self.is_white() else 6
 
+        # Unpack position and set Pawn's move range depending on it's position
         curr_y, curr_x = self.cell
-        move_range = 2 if curr_y == home_row else 1
-        
-        for val in range(1, move_range + 1):
-            move_pos = (dir_y * val + curr_y, curr_x)
+        move_range = 3 if curr_y == home_row else 2  # 3 and 2 since range() stop parameter is exclusive
 
-            if self.board.cell_is_valid_and_empty(move_pos):
-                reachable_cells.append(move_pos)
-            
-            else:
+        # Iterate over vertical cells (range 1-2), add to list if empty and break if front is blocked
+        for val in range(1, move_range):
+            move_pos = ((dir_y * val + curr_y), curr_x)
+
+            if not self.board.cell_is_valid_and_empty(move_pos):
                 break
 
+            reachable_cells.append(move_pos)
+
+        # Iterate over diagonal cells (range 1), add to list if enemy is on cell
         for val in (1, -1):
-            hit_pos = (curr_y + dir_y, curr_x + val)
+            hit_pos = ((curr_y + dir_y), (curr_x + val))
 
             if self.can_hit_on_cell(hit_pos):
                 reachable_cells.append(hit_pos)
@@ -243,7 +208,7 @@ class Rook(Piece):  # Turm
     def __init__(self, board, white):
         super().__init__(board, white)
 
-    def get_reachable_cells(self):
+    def get_reachable_cells(self) -> list[tuple[int, int]]:
         """
         **TODO** Implement the movability mechanic for `rooks <https://de.wikipedia.org/wiki/Turm_(Schach)>`_. 
 
@@ -261,31 +226,31 @@ class Rook(Piece):  # Turm
         """
         # TODO: Implement a method that returns all cells this piece can enter in its next move
         # Michel
-
+        # Create an empty list, a direction patterns tuple and unpack current position
         reachable_cells = []
-        # Direction pattern for the 'Rook'.
-        dir_patterns = {(1, 0),
+        dir_patterns = ((1, 0),
                         (-1, 0),
                         (0, 1),
-                        (0, -1)}
+                        (0, -1))
         curr_y, curr_x = self.cell
         
-        # Iterate over every possible direction the 'Rook' can move to (horizontally and vertically).
+        # Iterate over every possible direction (horizontally and vertically)
         for dir_y, dir_x in dir_patterns:
             dir_clear = True
             count = 0
 
-            # Check if a cell is reachable, one cell at a time.
-            # Increase/Decrease the x and y values by 1 or -1 depending on the current direction pattern until the 'Rook' reaches an obstacle.
+            # Check if a cell is reachable, one cell at a time
+            # Increase/Decrease the x and y values depending on direction pattern until direction is no longer clear
+            # Append if cell is clear
             while dir_clear:
                 count += 1
                 new_pos = ((count * dir_y + curr_y), (count * dir_x + curr_x))
                 
-                # Break out of the while-loop and go to the next direction if there is an ally piece in the way.
+                # Break if direction is blocked by ally or cell is invalid
                 if not self.can_enter_cell(new_pos):
                     break
                 
-                # Before breaking out of the while-loop append the position if there is an enemy piece in the way.
+                # Change direction if there is an enemy, but append cell to list
                 elif self.can_hit_on_cell(new_pos):
                     dir_clear = False
                 

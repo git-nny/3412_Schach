@@ -122,7 +122,7 @@ class BoardBase:
         Calls is_king_check for board configurations not yet known. Caches the result for later look-up.
         """
         # Calculate hash and see if current position is in the cache
-        hash = self.hash() + "-w" if white else "-b"
+        hash = self.hash() + ("-w" if white else "-b")
         if hash in self.check_cache:
             return self.check_cache[hash]
 
@@ -319,10 +319,10 @@ class Board(BoardBase):
         
         return score
 
-    def is_valid_cell(self, cell):
+    def is_valid_cell(self, cell: tuple) -> bool:
         """
         **TODO**: Check if the given cell coordinates are valid. A cell coordinate is valid if both
-        row and coloumn are between 0 and 7 inclusively.
+        row and column are between 0 and 7 inclusively.
 
         **HINT**:
         Cell is a tuple (row, col) of row and column. Unpack the tuple and check both row and col for
@@ -339,7 +339,7 @@ class Board(BoardBase):
 
         return False
 
-    def cell_is_valid_and_empty(self, cell):
+    def cell_is_valid_and_empty(self, cell: tuple) -> bool:
         """
         **TODO**: Check if the given cell is empty, meaning there is no piece placed on it.
 
@@ -351,7 +351,6 @@ class Board(BoardBase):
         # Michel
         # Check if argument has the correct format
         if cell and isinstance(cell, tuple) and len(cell) == 2:
-
             # Check if cell is valid and empty
             if self.is_valid_cell(cell) and not self.get_cell(cell):
                 return True
