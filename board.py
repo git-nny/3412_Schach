@@ -231,16 +231,16 @@ class Board(BoardBase):
     def iterate_cells_with_pieces(self, white):
 
         for row in range(len(self.cells)):
-            for column in range(len(self.cells[row])): 
+            for column in range(len(self.cells[row])): # iterate over all fields
 
-                piece = self.get_cell((row, column))
+                piece = self.get_cell((row, column)) # get piece;
                 
                 if piece:
                     if white:
-                        if piece.is_white():
+                        if piece.is_white(): #return white pieces
                             yield piece
 
-                    elif piece.is_white() == False:
+                    elif piece.is_white() == False: #return black pieces
                         yield piece
         
         """
@@ -400,14 +400,12 @@ class Board(BoardBase):
         the given piece "white" attribute.
         """
         # TODO: Implement - Ricarda
+        
+        if self.is_valid_cell(cell) == False: # can't hit bc cell is invalid
+            return False
+        
         occupying_piece = self.get_cell(cell)
-        if occupying_piece == None:
-            return False
-        
-        if self.is_valid_cell(cell) == False:
-            return False
-        
-        elif occupying_piece.is_white() == piece.is_white():
+        if (occupying_piece == None) or (occupying_piece.is_white() == piece.is_white()): # can't hit bc cell either not occupied or occupied by a piece of the same color
             return False
         
         else:

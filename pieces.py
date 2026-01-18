@@ -348,27 +348,27 @@ class Bishop(Piece):  # Läufer
         :return: A list of reachable cells this bishop could move into.
         """
         # TODO: Implement a method that returns all cells this piece can enter in its next move  - ricarda
-        directions = [ (-1, -1), (-1, 1), (1, -1), (1, 1)]
-        positions = []
 
-        def get_available_cells_in_direction(position_tuple, count=1):#tuple of start cell, tuple of direction
+        
+        directions = [ (-1, -1), (-1, 1), (1, -1), (1, 1)] # movement pattern for directions
+        positions = [] 
 
-            # count =  factor for each iteration
-            
+        def get_available_cells_in_direction(position_tuple, count=1):
+
             cell_y, cell_x =  position_tuple # starting position
             new_pos = (cell_y + direction[0] * count, cell_x + direction[1] * count)
-            # new_pos = (cell_y + direction[0] * count, cell_x + direction[1] * count)
 
-            if not self.board.cell_is_valid_and_empty(new_pos): # checks validity + empty/opposing piece
-                if self.can_hit_on_cell(new_pos): # checks for validity and color!
+            # end condition: if cell is invalid or occupied, end run 
+            if not self.board.cell_is_valid_and_empty(new_pos):
+                if self.can_hit_on_cell(new_pos): # adds latest cell if the cell contains opposing piece
                     positions.append(new_pos)
                     
             else:
                 positions.append(new_pos)
-                count += 1 
-                get_available_cells_in_direction( position_tuple, count )
+                count += 1
+                get_available_cells_in_direction( position_tuple, count ) # check next cell in row until end condition is hit
 
-
+        # run function for every direction in movement patterns
         for direction in directions:
             get_available_cells_in_direction(self.cell)
 
@@ -438,27 +438,23 @@ class King(Piece):  # König
         :return: A list of reachable cells this king could move into.
         """
         # TODO: Implement a method that returns all cells this piece can enter in its next move - Ricarda
-        y, x = self.cell # get current position (tuple)
-
+        
+        # get current cell and neighboring cells on current row
+        y, x = self.cell
         pos_modifier = [ -1, 0, 1 ]
-        positions_x = [ ( y, x + modifier) for modifier in pos_modifier ] # row positions
+        positions_x = [ ( y, x + modifier) for modifier in pos_modifier ] 
         new_position = []
 
+        # get all cells from row and add top and bottom cells to the array
         for position_y, position_x in positions_x:
-            for modifier in pos_modifier: # iterate through rows ...
-                new_position.append( (position_y + modifier, position_x )) # ... and add columns with the modifiers
+            for modifier in pos_modifier: 
+                new_position.append((position_y + modifier, position_x )) 
 
-        # Filter lists for valid_and_empty; can_hit_on and can_enter_cell
-        empty_cells = [position for position in new_position if self.board.cell_is_valid_and_empty(position)] 
-        attack_cells = [position for position in new_position if self.can_hit_on_cell(position)]
-        enter_cells = [position for position in new_position if self.can_enter_cell(position)] 
-
-        # join filtered list duplicates
-        available_positions = set(empty_cells + attack_cells + enter_cells) 
-        available_positions = list(available_positions)
+        # checks if cell is valid, and can be entered via attack or just being empty
+        available_positions = [position for position in new_position if self.can_enter_cell(position)] 
 
         return available_positions
-    
+
 # ⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⣿⣧⣤⡴⠞⠛⠛⠛⠛⠛⠛⠛⠛⠳⢦⣤⣴⣿⣿⣿⣦⡄⠀⠀⠀⠀⠀⠀⠀
 # ⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⡿⢋⡽⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢯⡙⢻⣿⣿⡄⠀⠀⠀⠀⠀⠀
 # ⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣷⡟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣾⣿⣿⠃⠀⠀⠀⠀⠀⠀
